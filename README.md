@@ -1,0 +1,1 @@
+This is my final project for my Python course. This is basically an app for watching how changes in human history shape the future.
