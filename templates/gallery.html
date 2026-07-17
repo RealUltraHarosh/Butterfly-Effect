@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Архив Альтернативных Миров</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #1a1a2e;
+            color: #ffffff;
+            max-width: 1000px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+            color: #e94560;
+            margin-bottom: 30px;
+        }
+        .nav-links {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .nav-links a {
+            color: #00fff0;
+            text-decoration: none;
+            font-size: 18px;
+        }
+        .nav-links a:hover {
+            text-decoration: underline;
+        }
+        /* Сетка карточек */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 25px;
+        }
+        /* Дизайн карточки */
+        .card {
+            background: #161625;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+            border: 1px solid #0f3460;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            border-color: #e94560;
+        }
+        .card-img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+        .card-content {
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+        }
+        .card-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #e94560;
+            margin-bottom: 10px;
+        }
+        .card-change {
+            font-size: 14px;
+            color: #ccc;
+            margin-bottom: 20px;
+            flex-grow: 1;
+            line-height: 1.4;
+        }
+        .card-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .btn-view {
+            background-color: #00fff0;
+            color: #1a1a2e;
+            padding: 8px 15px;
+            border-radius: 4px;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+        .btn-view:hover {
+            background-color: #00cccc;
+        }
+        .btn-delete {
+            background-color: transparent;
+            color: #ff4a4a;
+            border: 1px solid #ff4a4a;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: background 0.2s, color 0.2s;
+        }
+        .btn-delete:hover {
+            background-color: #ff4a4a;
+            color: white;
+        }
+        #no-scenarios {
+            text-align: center;
+            font-size: 18px;
+            color: #888;
+            grid-column: 1 / -1;
+            padding: 50px 0;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Архив Созданных Миров</h1>
+
+    <div class="nav-links">
+        <a href="/">← Вернуться и изменить историю</a>
+    </div>
+
+    <!-- Контейнер для карточек -->
+    <div id="gallery-grid" class="grid">
+        <!-- Сюда JavaScript будет динамически вставлять карточки -->
+        <div id="no-scenarios">Вы пока не изменили ни одной временной линии...</div>
+    </div>
+
+    <script>
+        // Загружаем все сценарии при загрузке страницы
+        document.addEventListener('DOMContentLoaded', loadGallery);
+
+        async function loadGallery() {
+            const grid = document.getElementById('gallery-grid');
+            const placeholder = document.getElementById('no-scenarios');
+
+            try {
+                const response = await fetch('/api/scenarios');
+                if (response.ok) {
+                    const scenarios = await response.json();
+
+                    if (scenarios.length > 0) {
+                        // Очищаем сетку (убираем плейсхолдер)
+                        grid.innerHTML = '';
+
+                        scenarios.forEach(scenario => {
+                            // Создаем карточку сценария
+                            const card = document.createElement('div');
+                            card.className = 'card';
+                            card.id = `card-${scenario.id}`;
+
+                            card.innerHTML = `
+                                <img class="card-img" src="${scenario.image_url}" alt="${scenario.era}">
+                                <div class="card-content">
+                                    <div class="card-title">${scenario.era}</div>
+                                    <div class="card-change">
+                                        <strong>Изменение:</strong> ${scenario.modified_event}
+                                    </div>
+                                    <div class="card-actions">
+                                        <a href="/timeline?id=${scenario.id}" class="btn-view">Открыть таймлайн</a>
+                                        <button class="btn-delete" onclick="deleteScenario('${scenario.id}')">Удалить</button>
+                                    </div>
+                                </div>
+                            `;
+                            grid.appendChild(card);
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error("Ошибка при загрузке галереи:", error);
+            }
+        }
+
+        // Функция удаления сценария
+        async function deleteScenario(id) {
+            if (confirm("Вы уверены, что хотите навсегда стереть эту временную линию из архива?")) {
+                try {
+                    const response = await fetch(`/api/scenario/${id}`, {
+                        method: 'DELETE'
+                    });
+
+                    if (response.ok) {
+                        // Удаляем карточку из интерфейса без перезагрузки страницы
+                        const card = document.getElementById(`card-${id}`);
+                        if (card) {
+                            card.remove();
+                        }
+                        
+                        // Если карточек больше не осталось, возвращаем плейсхолдер
+                        const grid = document.getElementById('gallery-grid');
+                        if (grid.children.length === 0) {
+                            grid.innerHTML = '<div id="no-scenarios">Вы пока не изменили ни одной временной линии...</div>';
+                        }
+                    } else {
+                        alert("Не удалось удалить сценарий с сервера.");
+                    }
+                } catch (error) {
+                    console.error("Ошибка при удалении:", error);
+                    alert("Ошибка сети при попытке удаления.");
+                }
+            }
+        }
+    </script>
+</body>
+</html>

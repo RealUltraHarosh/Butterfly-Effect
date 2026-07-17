@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Альтернативная Хронология</title>
+    <style>
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            background-color: #0b0c10;
+            color: #c5c6c7;
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+            color: #66fcf1;
+            text-shadow: 0 0 10px #66fcf1;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        .container {
+            background: #1f2833;
+            padding: 25px;
+            border-radius: 12px;
+            border: 1px solid #1f2833;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+        /* Главная карточка с итогом и картинкой */
+        .main-summary {
+            display: grid;
+            grid-template-columns: 1.2fr 1fr;
+            gap: 20px;
+            background: #151c24;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #45f3ff;
+            box-shadow: 0 0 10px rgba(69, 243, 255, 0.1);
+            margin-bottom: 30px;
+            align-items: center;
+        }
+        .summary-info h3 {
+            color: #e94560;
+            margin-top: 0;
+            text-transform: uppercase;
+        }
+        .summary-text {
+            font-size: 16px;
+            line-height: 1.5;
+            color: #fff;
+        }
+        .story-image {
+            width: 100%;
+            height: 250px;
+            object-fit: cover;
+            border-radius: 6px;
+            border: 2px solid #66fcf1;
+            box-shadow: 0 0 15px rgba(102, 252, 241, 0.2);
+        }
+        /* Блок Хронологии Шагов */
+        .timeline-steps {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .step-block {
+            background: #151c24;
+            border: 1px solid #1f2833;
+            border-radius: 6px;
+            overflow: hidden;
+            transition: border-color 0.3s;
+        }
+        .step-block.active {
+            border-color: #66fcf1;
+        }
+        /* Интерактивная кнопка шага */
+        .step-btn {
+            width: 100%;
+            background: #1f2833;
+            border: none;
+            color: #66fcf1;
+            padding: 15px;
+            text-align: left;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-family: inherit;
+            transition: background 0.2s;
+        }
+        .step-btn:hover {
+            background: #2b3a4a;
+        }
+        .step-content {
+            padding: 0 15px;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out, padding 0.3s ease-out;
+            font-size: 15px;
+            line-height: 1.6;
+            color: #e2e8f0;
+        }
+        .step-block.active .step-content {
+            padding: 15px;
+            max-height: 300px; /* Достаточный размер для абзаца */
+        }
+        .nav-links {
+            margin-top: 30px;
+            text-align: center;
+        }
+        .nav-links a {
+            color: #00fff0;
+            text-decoration: none;
+            margin: 0 15px;
+        }
+        .nav-links a:hover {
+            text-decoration: underline;
+        }
+        #loading {
+            text-align: center;
+            font-size: 20px;
+            color: #00fff0;
+            padding: 50px 0;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Хронология Нового Мира</h1>
+
+    <div id="loading">Просчет временных линий...</div>
+
+    <div id="content" class="container" style="display: none;">
+        
+        <!-- Главный экран: Краткая интрига и ИИ Арт -->
+        <div class="main-summary">
+            <div class="summary-info">
+                <h3>Эффект Бабочки запущен</h3>
+                <p><strong>Тема:</strong> <span id="eraName"></span></p>
+                <p id="summaryText" class="summary-text"></p>
+            </div>
+            <img id="storyImg" class="story-image" src="" alt="Визуализация таймлайна">
+        </div>
+
+        <!-- Поэтапные шаги раскрытия истории -->
+        <div class="timeline-steps">
+            
+            <div class="step-block" id="block-1">
+                <button class="step-btn" onclick="revealStep(1)">
+                    <span>Этап 1: Первые последствия (Ближайшее будущее)</span>
+                    <span id="arrow-1">▼</span>
+                </button>
+                <div class="step-content" id="step-1"></div>
+            </div>
+
+            <div class="step-block" id="block-2">
+                <button class="step-btn" onclick="revealStep(2)">
+                    <span>Этап 2: Ход времени (Через десятилетия)</span>
+                    <span id="arrow-2">▼</span>
+                </button>
+                <div class="step-content" id="step-2"></div>
+            </div>
+
+            <div class="step-block" id="block-3">
+                <button class="step-btn" onclick="revealStep(3)">
+                    <span>Этап 3: Альтернативное настоящее</span>
+                    <span id="arrow-3">▼</span>
+                </button>
+                <div class="step-content" id="step-3"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="nav-links">
+        <a href="/">Изменить другое событие</a> | 
+        <a href="/gallery">Перейти в Галерею</a>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const scenarioId = urlParams.get('id');
+
+        // Глобальный массив для хранения разделенных абзацев ИИ
+        let storyParagraphs = [];
+        // Фиксируем, какие шаги уже были напечатаны, чтобы не запускать печать дважды
+        let typedSteps = { 1: false, 2: false, 3: false };
+
+        if (!scenarioId) {
+            document.getElementById('loading').innerText = "Ошибка: ID сценария не указан.";
+        } else {
+            loadScenarioData(scenarioId);
+        }
+
+        async function loadScenarioData(id) {
+            try {
+                const response = await fetch(`/api/scenario/${id}`);
+                
+                if (response.ok) {
+                    const scenario = await response.json();
+                    
+                    // Разделяем сгенерированный текст ИИ по пустым строкам
+                    storyParagraphs = scenario.generated_text.split('\n\n').filter(p => p.trim() !== '');
+
+                    document.getElementById('eraName').innerText = scenario.era;
+                    document.getElementById('storyImg').src = scenario.image_url;
+                    
+                    // Выводим первый абзац (краткую суть) на главный экран
+                    const summaryText = storyParagraphs[0] || "Расчет завершен.";
+                    document.getElementById('summaryText').innerText = summaryText;
+
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('content').style.display = 'block';
+                } else {
+                    document.getElementById('loading').innerText = "Сценарий не найден.";
+                }
+            } catch (error) {
+                console.error(error);
+                document.getElementById('loading').innerText = "Ошибка при загрузке данных.";
+            }
+        }
+
+        // Функция раскрытия шагов по клику
+        function revealStep(stepNum) {
+            const block = document.getElementById(`block-${stepNum}`);
+            const contentDiv = document.getElementById(`step-${stepNum}`);
+            const arrow = document.getElementById(`arrow-${stepNum}`);
+
+            // Если блок уже активен — закрываем его
+            if (block.classList.contains('active')) {
+                block.classList.remove('active');
+                arrow.innerText = '▼';
+            } else {
+                // Закрываем другие блоки для аккуратности (аккордеон)
+                document.querySelectorAll('.step-block').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('[id^="arrow-"]').forEach(a => a.innerText = '▼');
+
+                // Открываем текущий блок
+                block.classList.add('active');
+                arrow.innerText = '▲';
+
+                // Если текст в этом шаге еще не печатался — запускаем эффект печатной машинки
+                if (!typedSteps[stepNum]) {
+                    typedSteps[stepNum] = true;
+                    const textToType = storyParagraphs[stepNum] || "Данные утеряны во времени.";
+                    typeWriter(contentDiv, textToType, 10); // 10 — скорость печати
+                }
+            }
+        }
+
+        // Функция эффекта печатной машинки
+        function typeWriter(element, text, speed) {
+            element.innerHTML = "";
+            let i = 0;
+            function type() {
+                if (i < text.length) {
+                    element.innerHTML += text.charAt(i);
+                    i++;
+                    setTimeout(type, speed);
+                }
+            }
+            type();
+        }
+    </script>
+</body>
+</html>
