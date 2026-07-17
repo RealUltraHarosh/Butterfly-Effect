@@ -141,12 +141,6 @@ def generate_alternative_history(original_context: str, modified: str) -> str:
 
 
 # --- 3. Генерация картинки (Nano Banana 2 / Gemini 3.1 Flash Image) ---
-
-def generate_nano_banana_image(scenario_id: str, history_query: str, modified_event: str) -> str:
-    """Генерация картинки в Google Gemini 3.1 Flash Lite Image (Nano Banana 2 Lite)"""
-    if not GEMINI_KEY:
-        print("Внимание: API-ключ Gemini не задан.")
-        return "https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=600"
         
 import urllib.parse  # Убедитесь, что этот импорт есть в самом верху app.py
 
