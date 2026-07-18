@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Симулятор Альтернативной Истории</title>
     <style>
+        /* Основные стили страницы */
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
             background-color: #121212;
@@ -13,7 +14,90 @@
             margin: 60px auto;
             padding: 20px;
             line-height: 1.6;
+            overflow-x: hidden;
         }
+
+        /* Стильный Сплэш-экран (Заставка) */
+        #splashScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #121212;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            transition: opacity 1s ease, visibility 1s ease;
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* Класс затухания заставки */
+        #splashScreen.fade-out {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .splash-content {
+            text-align: center;
+        }
+
+        /* Медленно вращающийся хроновихрь */
+        .gateway-vortex {
+            width: 100px;
+            height: 100px;
+            border: 2px solid transparent;
+            border-top: 2px solid #d1a153;
+            border-bottom: 2px solid rgba(209, 161, 83, 0.2);
+            border-radius: 50%;
+            animation: spin 6s linear infinite;
+            margin: 0 auto 35px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .splash-title {
+            font-family: "Georgia", serif;
+            font-size: 26px;
+            color: #fff;
+            font-weight: normal;
+            margin-bottom: 10px;
+            letter-spacing: 1px;
+        }
+
+        .splash-subtitle {
+            font-size: 14px;
+            color: #a1a1a6;
+            margin-bottom: 40px;
+        }
+
+        /* Кнопка на заставке */
+        .splash-btn {
+            background: transparent;
+            border: 1px solid #d1a153;
+            color: #d1a153;
+            padding: 14px 28px;
+            font-size: 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+        }
+
+        .splash-btn:hover {
+            background-color: #d1a153;
+            color: #121212;
+        }
+
+        /* Стили заголовков формы */
         h1 {
             font-family: "Georgia", serif;
             text-align: center;
@@ -23,6 +107,19 @@
             margin-bottom: 40px;
             letter-spacing: -0.5px;
         }
+
+        /* Плавное проявление контента формы */
+        .main-content {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 1.2s cubic-bezier(0.25, 1, 0.5, 1), transform 1.2s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        .main-content.reveal {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
         form {
             display: flex;
             flex-direction: column;
@@ -32,12 +129,20 @@
             border-radius: 8px;
             border: 1px solid #2c2c2e;
         }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
         label {
             font-family: "Georgia", serif;
             font-size: 16px;
-            color: #d1a153; /* Мягкое архивное золото */
-            margin-bottom: -5px;
+            color: #d1a153;
+            transition: color 0.2s;
         }
+
         input, textarea {
             padding: 12px;
             background: #121212;
@@ -46,13 +151,17 @@
             border-radius: 6px;
             font-size: 15px;
             font-family: inherit;
-            transition: border-color 0.2s;
+            transition: border-color 0.3s, box-shadow 0.3s;
         }
+
+        /* Элегантный плавный фокус полей */
         input:focus, textarea:focus {
             outline: none;
             border-color: #d1a153;
+            box-shadow: 0 0 8px rgba(209, 161, 83, 0.15);
         }
-        button {
+
+        button.submit-btn {
             background-color: #d1a153;
             color: #121212;
             border: none;
@@ -62,20 +171,25 @@
             border-radius: 6px;
             cursor: pointer;
             transition: background-color 0.2s;
+            font-family: inherit;
         }
-        button:hover {
+
+        button.submit-btn:hover {
             background-color: #e5b25d;
         }
+
         .nav-links {
             margin-top: 30px;
             text-align: center;
         }
+
         .nav-links a {
             color: #a1a1a6;
             text-decoration: none;
             font-size: 14px;
             transition: color 0.2s;
         }
+
         .nav-links a:hover {
             color: #fff;
             text-decoration: underline;
@@ -84,29 +198,58 @@
 </head>
 <body>
 
-    <h1>Эффект Бабочки: Симулятор</h1>
-    
-    <!-- Упрощенная форма ввода -->
-    <form id="simulationForm">
-        <label for="history_query">Историческое событие или личность:</label>
-        <input type="text" id="history_query" name="history_query" required 
-       placeholder="Будьте точны. Например: Танк Пантера, Римский император Цезарь, Юрий Гагарин...">
+    <!-- Вводный Сплэш-экран (Заставка) -->
+    <div id="splashScreen">
+        <div class="splash-content">
+            <div class="gateway-vortex"></div>
+            <h2 class="splash-title">СИМУЛЯТОР ВРЕМЕННЫХ ИСКАЖЕНИЙ</h2>
+            <p class="splash-subtitle">Инициализация темпорального архива v2.6</p>
+            <button class="splash-btn" onclick="startSimulation()">Войти во временной поток</button>
+        </div>
+    </div>
 
-        <label for="modified_event">Что произошло по-другому? (Минимум 10 символов):</label>
-        <textarea id="modified_event" name="modified_event" required minlength="10" placeholder="Опишите ваше вмешательство в историю..."></textarea>
+    <!-- Основной контент страницы (плавно проявляется) -->
+    <div class="main-content" id="mainContent">
+        <h1>Эффект Бабочки: Симулятор</h1>
+        
+        <form id="simulationForm">
+            <div class="input-group">
+                <label for="history_query">Историческое событие или личность:</label>
+                <input type="text" id="history_query" name="history_query" required placeholder="Например: Юлий Цезарь, Битва при Ватерлоо...">
+            </div>
 
-        <button type="submit">Запустить генерацию альтернативного будущего</button>
-    </form>
+            <div class="input-group">
+                <label for="modified_event">Что произошло по-другому? (Минимум 10 символов):</label>
+                <textarea id="modified_event" name="modified_event" required minlength="10" placeholder="Опишите ваше вмешательство в историю..."></textarea>
+            </div>
 
-    <div class="nav-links">
-        <a href="/gallery">Перейти в Галерею</a>
+            <button type="submit" class="submit-btn">Запустить генерацию альтернативного будущего</button>
+        </form>
+
+        <div class="nav-links">
+            <a href="/gallery">Перейти в Галерею миров</a>
+        </div>
     </div>
 
     <script>
+        // Функция скрытия заставки и плавного проявления формы
+        function startSimulation() {
+            const splash = document.getElementById('splashScreen');
+            const content = document.getElementById('mainContent');
+            
+            // Запускаем затухание заставки
+            splash.classList.add('fade-out');
+            
+            // С небольшой задержкой плавно проявляем форму
+            setTimeout(() => {
+                content.classList.add('reveal');
+            }, 300);
+        }
+
+        // Логика отправки формы на FastAPI бэкенд
         document.getElementById('simulationForm').addEventListener('submit', async function(event) {
             event.preventDefault();
 
-            // Собираем данные из полей ввода
             const historyQuery = document.getElementById('history_query').value;
             const modifiedEvent = document.getElementById('modified_event').value;
 
@@ -126,7 +269,6 @@
 
                 if (response.ok) {
                     const result = await response.json();
-                    // Перенаправляем пользователя на страницу таймлайна
                     window.location.href = `/timeline?id=${result.scenario_id}`;
                 } else {
                     alert("Ошибка сервера при обработке запроса.");
