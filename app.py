@@ -139,23 +139,58 @@ def generate_alternative_history(original_context: str, modified: str) -> str:
         print(f"DeepSeek Exception: {e}")
         return "Произошла непредвиденная ошибка при подключении к ИИ."
 
+def generate_image_prompt_with_deepseek(story_text: str, history_query: str) -> str:
+    """Просит DeepSeek написать детальный промпт для картинки на основе истории"""
+    if not DEEPSEEK_KEY:
+        return f"A cinematic digital painting about {history_query}."
+        
+    url = "https://api.deepseek.com/v1/chat/completions"
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {DEEPSEEK_KEY}"
+    }
+    
+    # Даем ИИ жесткую инструкцию по избеганию бород и созданию кинематографичности
+    prompt = (
+        f"Based on this alternate history query '{history_query}' and the story: '{story_text}', "
+        f"write a highly detailed visual prompt for an AI image generator (like FLUX) in English. "
+        f"Describe one key dramatic scene in detail (composition, camera angle, atmospheric lighting, colors). "
+        f"CRITICAL INSTRUCTION: If there are men in the scene, explicitly describe them as 'clean-shaven, young/modern look' "
+        f"to avoid the AI's default bias towards giving everyone historical beards, unless a beard is strictly historically accurate. "
+        f"Style: Cinematic film still, highly realistic, dramatic volumetric lighting. "
+        f"Keep the prompt strictly to a single paragraph under 70 words. Do not write any introduction, markdown, or chat, just the prompt itself."
+    )
+    
+    payload = {
+        "model": "deepseek-v4-flash",
+        "messages": [
+            {"role": "system", "content": "You are an expert AI prompt engineer for Midjourney and FLUX. You only output the raw English prompt string."},
+            {"role": "user", "content": prompt}
+        ],
+        "temperature": 0.6
+    }
+    
+    try:
+        response = requests.post(url, json=payload, headers=headers, timeout=15)
+        if response.status_code == 200:
+            ai_prompt = response.json()["choices"][0]["message"]["content"]
+            print(f"=== СГЕНЕРИРОВАННЫЙ ИИ ПРОМПТ ===\n{ai_prompt}\n=================================")
+            return ai_prompt.strip()
+    except Exception as e:
+        print(f"Ошибка при генерации промпта через DeepSeek: {e}")
+        
+    # Запасной простой промпт, если ИИ сбоит
+    return f"Cinematic historical drama photograph, depicting {history_query}, realistic, dramatic lighting."
 
 # --- 3. Генерация картинки (Nano Banana 2 / Gemini 3.1 Flash Image) ---
         
 import urllib.parse  # Убедитесь, что этот импорт есть в самом верху app.py
 
-def generate_nano_banana_image(scenario_id: str, history_query: str, modified_event: str) -> str:
-    """Генерация кинематографичной картинки через модель FLUX"""
+def generate_nano_banana_image(scenario_id: str, ai_generated_prompt: str) -> str:
+    """Генерация картинки по готовому промпту от DeepSeek"""
+    encoded_prompt = urllib.parse.quote(ai_generated_prompt)
     
-    # Автоматически улучшаем промпт кинематографичными ключевыми словами
-    enhanced_prompt = (
-        f"A cinematic, realistic historical film still showing: {modified_event} in {history_query}. "
-        f"Dramatic volumetric lighting, award-winning historical drama photography, highly detailed, shot on 35mm lens, photorealistic."
-    )
-    
-    encoded_prompt = urllib.parse.quote(enhanced_prompt)
-    
-    # Подключаем современную модель FLUX (&model=flux)
+    # Делаем запрос к FLUX с промптом от DeepSeek
     url = f"https://image.pollinations.ai/p/{encoded_prompt}?width=1024&height=768&seed=42&nologo=true&model=flux"
     
     try:
@@ -167,7 +202,7 @@ def generate_nano_banana_image(scenario_id: str, history_query: str, modified_ev
             with open(file_path, "wb") as f:
                 f.write(response.content)
                 
-            print(f"Высококачественная FLUX-картинка сохранена: {file_path}")
+            print(f"Картинка успешно сохранена: {file_path}")
             return f"/static/{file_name}"
     except Exception as e:
         print(f"Ошибка при работе с FLUX: {e}")
@@ -198,25 +233,28 @@ async def simulate_butterfly_effect(request: SimulationRequest):
     scenario_id = str(uuid.uuid4())
     created_at = datetime.now().isoformat()
     
-    # 1. Автоматический поиск контекста в Википедии
+    # 1. Поиск в Википедии
     wiki_context = get_wikipedia_summary(request.history_query)
     
-    # 2. Генерация текста в DeepSeek
+    # 2. Генерация истории (DeepSeek)
     generated_text = generate_alternative_history(
         original_context=wiki_context, 
         modified=request.modified_event
     )
     
-    # 3. Генерация изображения через Nano Banana 2
-    image_url = generate_nano_banana_image(
-        scenario_id=scenario_id,
-        history_query=request.history_query,
-        modified_event=request.modified_event
+    # 3. НОВОЕ: Просим DeepSeek написать идеальный промпт для картинки на основе истории
+    ai_image_prompt = generate_image_prompt_with_deepseek(
+        story_text=generated_text, 
+        history_query=request.history_query
     )
     
-    # 4. Сохраняем в db.json. 
-    # Записываем поисковый запрос в 'era', а текст википедии в 'original_event' 
-    # для сохранения полной совместимости с шаблоном timeline.html.
+    # 4. Передаем этот ИИ-промпт во FLUX
+    image_url = generate_nano_banana_image(
+        scenario_id=scenario_id,
+        ai_generated_prompt=ai_image_prompt # Передаем сгенерированный промпт
+    )
+    
+    # 5. Сохраняем в базу данных
     new_scenario = {
         "id": scenario_id,
         "era": request.history_query,
@@ -235,7 +273,6 @@ async def simulate_butterfly_effect(request: SimulationRequest):
         "message": "Временная линия успешно изменена!",
         "scenario_id": scenario_id
     }
-
 
 @app.get("/api/scenario/{scenario_id}")
 async def get_scenario(scenario_id: str):
