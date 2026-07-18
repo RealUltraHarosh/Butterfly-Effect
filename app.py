@@ -159,7 +159,7 @@ def generate_image_prompt_with_deepseek(story_text: str, history_query: str) -> 
     # Даем ИИ жесткую инструкцию по избеганию бород и созданию кинематографичности
     prompt = (
         f"Based on this alternate history query '{history_query}' and the story: '{story_text}', "
-        f"write a highly detailed visual prompt for an AI image generator (like FLUX) in English. "
+        f"write a highly detailed visual prompt for an AI image generator (like flux) in English. "
         f"Describe one key dramatic scene in detail (composition, camera angle, atmospheric lighting, colors). "
         f"CRITICAL INSTRUCTION: If there are men in the scene, explicitly describe them as 'clean-shaven, young/modern look' "
         f"to avoid the AI's default bias towards giving everyone historical beards, unless a beard is strictly historically accurate. "
@@ -200,7 +200,7 @@ def generate_nano_banana_image(scenario_id: str, ai_generated_prompt: str) -> st
     url = f"https://image.pollinations.ai/p/{encoded_prompt}?width=1024&height=768&seed=42&nologo=true&model=flux"
     
     try:
-        response = requests.get(url, timeout=20)
+        response = requests.get(url, timeout=60)
         if response.status_code == 200:
             file_name = f"{scenario_id}.png"
             file_path = os.path.join(STATIC_DIR, file_name)
