@@ -14,8 +14,10 @@ DEEPSEEK_KEY = ""
 
 app = FastAPI()
 
-DB_FILE = "db.json"
-STATIC_DIR = "static"
+# Замените старые строчки настройки статики на эти:
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+STATIC_DIR = os.path.join(BASE_DIR, "static")
+DB_FILE = os.path.join(BASE_DIR, "db.json") # Тоже делаем абсолютным для надежности
 
 if not os.path.exists(STATIC_DIR):
     os.makedirs(STATIC_DIR)
@@ -97,7 +99,7 @@ def get_wikipedia_summary(query: str) -> str:
 # --- 2. Генерация текста (DeepSeek V4 Flash) ---
 
 def generate_alternative_history(original_context: str, modified: str) -> str:
-    """Генерация таймлайна через DeepSeek на основе контекста Википедии"""
+    """Генерация структурированного таймлайна из 4 абзацев с учетом реализма"""
     if not DEEPSEEK_KEY:
         return "Ошибка: API-ключ DeepSeek не обнаружен."
         
@@ -107,15 +109,21 @@ def generate_alternative_history(original_context: str, modified: str) -> str:
         "Authorization": f"Bearer {DEEPSEEK_KEY}"
     }
     
+    # ЗДЕСЬ используются original_context и modified
     prompt = (
         f"Реальный исторический факт из Википедии:\n{original_context}\n\n"
         f"Вмешательство пользователя в историю: {modified}.\n\n"
         f"На основе этих данных напиши альтернативную историю. Текст должен строго состоять из 4 абзацев, разделенных пустой строкой (без заголовков и нумерации):\n"
-        f"Абзац 1: Краткая суть изменений (буквально 1-2 предложения — интрига).\n"
+        f"Абзац 1: Краткая суть изменений (буквально 1-2 предложения).\n"
         f"Абзац 2: Кратко о том, что произошло сразу в первые годы после события.\n"
         f"Абзац 3: Кратко о том, как изменился мир через десятилетия.\n"
-        f"Абзац 4: Кратко о том, к какому альтернативному настоящему это привело сегодня.\n"
-        f"Будь лаконичен, пиши интересно на русском языке."
+        f"Абзац 4: Кратко о том, к какому альтернативному настоящему это привело сегодня.\n\n"
+        f"КРИТИЧЕСКОЕ ТРЕБОВАНИЕ РЕАЛИЗМА:\n"
+        f"Оценивай масштаб вмешательства реалистично. Если изменение пользователя незначительное, бытовое или "
+        f"касается второстепенных деталей, история НЕ ДОЛЖНА кардинально ломаться (никаких распадов империй или ядерных войн из-за чашки чая). "
+        f"В этом случае опиши, как история поглотила это изменение, либо покажи забавные, локальные последствия. "
+        f"Глобальный 'эффект бабочки' должен происходить только при изменении ключевых исторических развилок.\n"
+        f"Пиши лаконично и логично на русском языке."
     )
     
     payload = {
@@ -132,12 +140,10 @@ def generate_alternative_history(original_context: str, modified: str) -> str:
         if response.status_code == 200:
             result = response.json()
             return result["choices"][0]["message"]["content"]
-        else:
-            print(f"DeepSeek Error: {response.status_code} - {response.text}")
-            return "Не удалось сгенерировать историю из-за сбоя API DeepSeek."
     except Exception as e:
         print(f"DeepSeek Exception: {e}")
-        return "Произошла непредвиденная ошибка при подключении к ИИ."
+        
+    return "Не удалось сгенерировать хронологию событий из-за сбоя ИИ."
 
 def generate_image_prompt_with_deepseek(story_text: str, history_query: str) -> str:
     """Просит DeepSeek написать детальный промпт для картинки на основе истории"""
